@@ -1,0 +1,1406 @@
+import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import {
+  Rocket, ShoppingCart, User, Zap, Palette, Wrench, Globe, CheckCircle2,
+  Star, LogIn, UserPlus, LayoutDashboard, Package, CreditCard, FolderKanban,
+  MessageCircle, Settings, LogOut, Upload, Send, Menu, X, Moon, Sun,
+  ArrowLeft, Eye, EyeOff, Phone, Mail, MapPin, Instagram, Send as Telegram,
+  Sparkles, ChevronDown, ExternalLink, Clock, ShieldCheck, Ticket, PlusCircle,
+} from "lucide-react";
+
+/* ============================= DESIGN TOKENS =============================
+  Color:
+    --bg        #07080F  deep near-black void (matches logo backdrop)
+    --surface   #0E1020  card base
+    --glass     rgba(255,255,255,0.045) glass fill
+    --border    rgba(255,255,255,0.09) hairline
+    --blue-1    #2F52FF  logo gradient start
+    --blue-2    #7C93FF  logo gradient end
+    --ink       #EDEFF7  primary text (near the logo's brushed-silver W)
+    --mute      #9298B3  secondary text
+    --amber     #FFB020  single warm accent (badges / stars / highlights)
+  Type: Vazirmatn — Black/800 for display, 500/400 for body, tabular numerals for stats.
+  Signature: drifting pixel-dust field (the logo's own corner motif, set loose across the page)
+    that assembles into the mark on load and re-scatters as an ambient background.
+============================================================================ */
+
+const FONT_IMPORT =
+  "@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');";
+
+const GLOBAL_CSS = `
+${FONT_IMPORT}
+* { box-sizing: border-box; }
+.dw-root {
+  --bg:#07080F; --surface:#0E1020; --surface-2:#141730;
+  --glass: rgba(255,255,255,0.045); --glass-strong: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.09); --border-strong: rgba(255,255,255,0.16);
+  --blue-1:#2F52FF; --blue-2:#7C93FF; --blue-3:#1B2B99;
+  --ink:#EDEFF7; --mute:#9298B3; --mute-2:#5B6183; --amber:#FFB020;
+  font-family:'Vazirmatn',sans-serif; background:var(--bg); color:var(--ink);
+  direction:rtl; min-height:100vh; position:relative; overflow-x:hidden;
+}
+.dw-root.light {
+  --bg:#F3F4FA; --surface:#FFFFFF; --surface-2:#EDEFF9;
+  --glass: rgba(20,22,50,0.035); --glass-strong: rgba(20,22,50,0.06);
+  --border: rgba(20,22,50,0.09); --border-strong: rgba(20,22,50,0.16);
+  --ink:#0E1020; --mute:#565B7A; --mute-2:#8489A6;
+}
+.dw-serif-num { font-variant-numeric: tabular-nums; }
+.dw-grad-text {
+  background: linear-gradient(95deg, var(--blue-2), var(--blue-1) 55%, var(--blue-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.dw-glass {
+  background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border:1px solid var(--border);
+}
+.dw-btn-primary {
+  background: linear-gradient(95deg, var(--blue-1), var(--blue-2));
+  color:#fff; box-shadow: 0 8px 30px -8px rgba(47,82,255,0.55);
+  transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+}
+.dw-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 38px -8px rgba(47,82,255,0.7); filter:brightness(1.06); }
+.dw-btn-primary:active { transform: translateY(0px) scale(.98); }
+.dw-btn-ghost {
+  background: var(--glass); border:1px solid var(--border-strong); color:var(--ink);
+  transition: all .25s ease;
+}
+.dw-btn-ghost:hover { background: var(--glass-strong); border-color: var(--blue-2); }
+.dw-card { background: var(--glass); border:1px solid var(--border); backdrop-filter: blur(14px); transition: all .35s ease; }
+.dw-card:hover { border-color: var(--border-strong); transform: translateY(-4px); box-shadow: 0 20px 45px -20px rgba(47,82,255,0.35); }
+.dw-input {
+  background: var(--glass); border:1px solid var(--border); color:var(--ink);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.dw-input::placeholder { color: var(--mute-2); }
+.dw-input:focus { outline:none; border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(124,147,255,0.18); }
+.dw-input.err { border-color:#FF5C7A; box-shadow: 0 0 0 3px rgba(255,92,122,0.15); }
+:focus-visible { outline: 2px solid var(--blue-2); outline-offset: 2px; }
+
+@keyframes dwFloat { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-14px) } }
+@keyframes dwPixelFade { 0%,100%{ opacity:.15 } 50%{ opacity:.65 } }
+@keyframes dwSpin { to { transform: rotate(360deg) } }
+@keyframes dwFadeUp { from { opacity:0; transform: translateY(22px) } to { opacity:1; transform:none } }
+@keyframes dwPop { from { opacity:0; transform: scale(.9) } to { opacity:1; transform:scale(1) } }
+@keyframes dwToast { from { opacity:0; transform: translateY(-14px) } to { opacity:1; transform:none } }
+@keyframes dwAssemble { 0%{ opacity:0; transform: translate(var(--sx),var(--sy)) scale(.4);} 100%{ opacity:1; transform:none } }
+@keyframes dwCountBar { from { width:0 } }
+.dw-reveal { animation: dwFadeUp .7s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .dw-reveal, .dw-float, .dw-pixel { animation: none !important; }
+}
+.dw-float { animation: dwFloat 6s ease-in-out infinite; }
+.dw-pixel { animation: dwPixelFade linear infinite; }
+.dw-scroll::-webkit-scrollbar { width:6px; }
+.dw-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius:8px; }
+`;
+
+/* ============================= UTIL: reveal on scroll ============================= */
+function useReveal() {
+  const ref = useRef(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setShown(true)),
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return [ref, shown];
+}
+
+function Reveal({ children, delay = 0, className = "" }) {
+  const [ref, shown] = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={className + (shown ? " dw-reveal" : "")}
+      style={{ opacity: shown ? undefined : 0, animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ============================= TOASTS ============================= */
+const ToastCtx = createContext(() => {});
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const push = useCallback((msg, type = "success") => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts((t) => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3400);
+  }, []);
+  return (
+    <ToastCtx.Provider value={push}>
+      {children}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-2 items-center px-4 w-full max-w-sm">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="dw-glass w-full rounded-2xl px-4 py-3 flex items-center gap-2 text-sm shadow-2xl"
+            style={{ animation: "dwToast .35s ease both", borderColor: t.type === "error" ? "#FF5C7A55" : "var(--border-strong)" }}
+          >
+            {t.type === "error" ? (
+              <X size={16} style={{ color: "#FF5C7A" }} />
+            ) : (
+              <CheckCircle2 size={16} style={{ color: "var(--blue-2)" }} />
+            )}
+            <span>{t.msg}</span>
+          </div>
+        ))}
+      </div>
+    </ToastCtx.Provider>
+  );
+}
+const useToast = () => useContext(ToastCtx);
+
+/* ============================= LOGO MARK ============================= */
+function LogoMark({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="dwlg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#7C93FF" />
+          <stop offset="1" stopColor="#2148F5" />
+        </linearGradient>
+      </defs>
+      <path d="M40 10 H56 A34 34 0 0 1 56 78 H46 L40 66 L34 78 H24 L40 46 L24 22 H38 L48 42 L56 22 H46 Z" fill="url(#dwlg)" opacity="0" />
+      <path
+        d="M42 8 a36 36 0 0 1 0 72 h-9 l-9 -13 l-9 13 h-10 l16 -23 l-16 -22 h13 l11 15 l11 -15 h13 l-16 21 l16 22 a36 36 0 0 0 0 -72 z"
+        fill="url(#dwlg)"
+        transform="translate(2,2) scale(0.9)"
+        style={{ display: "none" }}
+      />
+      {/* Simplified faithful mark: open ring "D" + chevron "W" */}
+      <path
+        d="M38 6 C60 6 76 22 76 44 C76 66 60 82 38 82 L30 82 L30 70 L38 70 C53 70 64 59 64 44 C64 29 53 18 38 18 L30 18 L30 30 L38 30 L38 6 Z"
+        fill="url(#dwlg)"
+      />
+      <path d="M12 40 L28 40 L28 56 L38 68 L50 52 L62 68 L72 52" stroke="none" fill="none" />
+      <path d="M18 40 L30 62 L42 46 L54 62 L64 40" stroke="#EDEFF7" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <rect x="6" y="12" width="7" height="7" fill="#7C93FF" opacity=".9" />
+      <rect x="16" y="12" width="7" height="7" fill="#7C93FF" opacity=".55" />
+      <rect x="6" y="22" width="7" height="7" fill="#7C93FF" opacity=".55" />
+      <rect x="16" y="22" width="7" height="7" fill="#7C93FF" opacity=".3" />
+    </svg>
+  );
+}
+
+/* ============================= PIXEL DUST FIELD (signature element) ============================= */
+function PixelField({ count = 26, area = "hero" }) {
+  const dots = React.useMemo(
+    () =>
+      Array.from({ length: count }).map((_, i) => ({
+        id: i,
+        top: Math.random() * 100,
+        left: Math.random() * 100,
+        size: 3 + Math.round(Math.random() * 6),
+        dur: 2 + Math.random() * 4,
+        delay: Math.random() * 4,
+        blue: Math.random() > 0.35,
+      })),
+    [count]
+  );
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      {dots.map((d) => (
+        <span
+          key={d.id}
+          className="dw-pixel absolute rounded-[2px]"
+          style={{
+            top: `${d.top}%`,
+            left: `${d.left}%`,
+            width: d.size,
+            height: d.size,
+            background: d.blue ? "var(--blue-2)" : "var(--ink)",
+            animationDuration: `${d.dur}s`,
+            animationDelay: `${d.delay}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ============================= LOADING SCREEN ============================= */
+function LoadingScreen({ done }) {
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex flex-col items-center justify-center gap-4"
+      style={{
+        background: "var(--bg)",
+        opacity: done ? 0 : 1,
+        pointerEvents: done ? "none" : "auto",
+        transition: "opacity .5s ease",
+      }}
+    >
+      <div style={{ animation: "dwPop .6s cubic-bezier(.16,1,.3,1) both" }}>
+        <LogoMark size={62} />
+      </div>
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-2 h-2 rounded-full"
+            style={{ background: "var(--blue-2)", animation: `dwPixelFade .9s ease-in-out infinite`, animationDelay: `${i * 0.15}s` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================= NAV ============================= */
+const NAV_LINKS = [
+  { id: "home", label: "خانه" },
+  { id: "services", label: "خدمات" },
+  { id: "portfolio", label: "نمونه‌کارها" },
+  { id: "pricing", label: "تعرفه‌ها" },
+  { id: "testimonials", label: "درباره ما" },
+  { id: "contact", label: "تماس با ما" },
+];
+
+function Navbar({ goto, page, user, onLogout, theme, setTheme, scrollTo }) {
+  const [open, setOpen] = useState(false);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const handleNav = (id) => {
+    setOpen(false);
+    if (page !== "home") goto("home", () => setTimeout(() => scrollTo(id), 60));
+    else scrollTo(id);
+  };
+
+  return (
+    <header
+      className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
+      style={{
+        background: stuck ? "rgba(7,8,15,0.62)" : "transparent",
+        backdropFilter: stuck ? "blur(16px)" : "none",
+        borderBottom: stuck ? "1px solid var(--border)" : "1px solid transparent",
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+        <button onClick={() => handleNav("home")} className="flex items-center gap-2 shrink-0">
+          <LogoMark size={34} />
+          <div className="text-right leading-tight hidden sm:block">
+            <div className="font-extrabold text-[15px] dw-grad-text">دیجی وب</div>
+            <div className="text-[10px] tracking-wide" style={{ color: "var(--mute-2)" }}>DIGIWEB STUDIO</div>
+          </div>
+        </button>
+
+        <nav className="hidden lg:flex items-center gap-1">
+          {NAV_LINKS.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => handleNav(l.id)}
+              className="px-3.5 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/5"
+              style={{ color: "var(--mute)" }}
+            >
+              {l.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="hidden lg:flex items-center gap-2">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="dw-btn-ghost w-9 h-9 rounded-full flex items-center justify-center"
+            aria-label="تغییر پوسته"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          {user ? (
+            <button onClick={() => goto("dashboard")} className="dw-btn-primary rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-1.5">
+              <LayoutDashboard size={16} /> داشبورد
+            </button>
+          ) : (
+            <>
+              <button onClick={() => goto("login")} className="dw-btn-ghost rounded-xl px-4 py-2 text-sm font-semibold flex items-center gap-1.5">
+                <LogIn size={15} /> ورود
+              </button>
+              <button onClick={() => goto("order")} className="dw-btn-primary rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-1.5">
+                <Rocket size={15} /> شروع سفارش
+              </button>
+            </>
+          )}
+        </div>
+
+        <button className="lg:hidden dw-btn-ghost w-10 h-10 rounded-xl flex items-center justify-center" onClick={() => setOpen((o) => !o)} aria-label="منو">
+          {open ? <X size={19} /> : <Menu size={19} />}
+        </button>
+      </div>
+
+      {open && (
+        <div className="lg:hidden dw-glass mx-4 mb-3 rounded-2xl p-3 flex flex-col gap-1" style={{ animation: "dwFadeUp .3s ease both" }}>
+          {NAV_LINKS.map((l) => (
+            <button key={l.id} onClick={() => handleNav(l.id)} className="text-right px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/5">
+              {l.label}
+            </button>
+          ))}
+          <div className="h-px my-1" style={{ background: "var(--border)" }} />
+          {user ? (
+            <button onClick={() => { setOpen(false); goto("dashboard"); }} className="dw-btn-primary rounded-xl px-4 py-3 text-sm font-bold flex items-center gap-2 justify-center">
+              <LayoutDashboard size={16} /> داشبورد
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => { setOpen(false); goto("login"); }} className="dw-btn-ghost flex-1 rounded-xl px-4 py-3 text-sm font-semibold">ورود</button>
+              <button onClick={() => { setOpen(false); goto("order"); }} className="dw-btn-primary flex-1 rounded-xl px-4 py-3 text-sm font-bold">سفارش</button>
+            </div>
+          )}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="dw-btn-ghost rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2 justify-center mt-1"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} تغییر پوسته
+          </button>
+        </div>
+      )}
+    </header>
+  );
+}
+
+/* ============================= HERO ============================= */
+function Hero({ goto, scrollTo }) {
+  return (
+    <section id="home" className="relative pt-32 pb-24 md:pt-44 md:pb-32 px-5 md:px-8 overflow-hidden">
+      <div
+        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[720px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(47,82,255,0.28), transparent 65%)", filter: "blur(10px)" }}
+      />
+      <PixelField count={30} />
+      <div className="max-w-7xl mx-auto relative grid lg:grid-cols-[1.15fr_0.85fr] gap-14 items-center">
+        <div className="text-center lg:text-right">
+          <Reveal>
+            <div className="inline-flex items-center gap-2 dw-glass rounded-full px-4 py-1.5 text-xs font-semibold mb-6" style={{ color: "var(--blue-2)" }}>
+              <Sparkles size={13} /> استودیوی طراحی وب دیجی وب
+            </div>
+          </Reveal>
+          <Reveal delay={90}>
+            <h1 className="text-4xl md:text-6xl font-black leading-[1.25] mb-6">
+              سایت حرفه‌ای،
+              <br />
+              <span className="dw-grad-text">شروع یک کسب‌وکار حرفه‌ای</span> 🚀
+            </h1>
+          </Reveal>
+          <Reveal delay={160}>
+            <p className="text-base md:text-lg max-w-xl mx-auto lg:mx-0 mb-9" style={{ color: "var(--mute)" }}>
+              با دیجی وب، ایده‌ات رو به یک وب‌سایت سریع، مدرن و حرفه‌ای تبدیل کن؛ از طراحی تا توسعه و پشتیبانی، همه‌جا کنارتیم.
+            </p>
+          </Reveal>
+          <Reveal delay={230}>
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
+              <button onClick={() => goto("order")} className="dw-btn-primary rounded-2xl px-7 py-3.5 font-bold flex items-center gap-2">
+                شروع سفارش <ArrowLeft size={17} />
+              </button>
+              <button onClick={() => scrollTo("portfolio")} className="dw-btn-ghost rounded-2xl px-7 py-3.5 font-bold flex items-center gap-2">
+                <Eye size={17} /> مشاهده نمونه‌کارها
+              </button>
+            </div>
+          </Reveal>
+        </div>
+
+        <Reveal delay={140} className="relative flex justify-center lg:justify-start">
+          <div className="relative dw-float">
+            <div className="dw-glass rounded-[2rem] p-8 md:p-10 relative" style={{ boxShadow: "0 40px 100px -40px rgba(47,82,255,0.5)" }}>
+              <LogoMark size={140} />
+              <div className="absolute -bottom-5 -right-5 dw-glass rounded-2xl px-4 py-3 flex items-center gap-2" style={{ animation: "dwFloat 5s ease-in-out infinite .5s" }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))" }}>
+                  <Globe size={15} color="#fff" />
+                </div>
+                <span className="text-xs font-bold">تحویل سریع</span>
+              </div>
+              <div className="absolute -top-5 -left-6 dw-glass rounded-2xl px-4 py-3 flex items-center gap-2" style={{ animation: "dwFloat 6.5s ease-in-out infinite" }}>
+                <ShieldCheck size={15} style={{ color: "var(--amber)" }} />
+                <span className="text-xs font-bold">پشتیبانی مطمئن</span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= SERVICES ============================= */
+const SERVICES = [
+  { icon: Globe, title: "طراحی سایت شرکتی", desc: "معرفی حرفه‌ای برند شما با ساختاری قابل‌اعتماد و رسمی." },
+  { icon: ShoppingCart, title: "طراحی سایت فروشگاهی", desc: "فروشگاه آنلاین کامل با سبد خرید، پرداخت و مدیریت محصولات." },
+  { icon: User, title: "طراحی سایت شخصی", desc: "رزومه و نمونه‌کار آنلاین برای معرفی مهارت‌های شما." },
+  { icon: Zap, title: "طراحی سایت اختصاصی", desc: "پیاده‌سازی سفارشی برای نیازهای خاص و غیرتکراری کسب‌وکار." },
+  { icon: Palette, title: "طراحی UI/UX", desc: "تجربه کاربری روان و رابط بصری متمایز برای محصول شما." },
+  { icon: Wrench, title: "پشتیبانی و توسعه سایت", desc: "نگهداری، بروزرسانی و افزودن قابلیت‌های جدید بعد از تحویل." },
+];
+
+function Services() {
+  return (
+    <section id="services" className="py-24 px-5 md:px-8 relative">
+      <div className="max-w-7xl mx-auto">
+        <Reveal className="text-center mb-14">
+          <span className="text-xs font-bold tracking-widest" style={{ color: "var(--blue-2)" }}>خدمات ما</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-3">هر چیزی که برای رشد آنلاین لازم داری</h2>
+        </Reveal>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {SERVICES.map((s, i) => (
+            <Reveal key={s.title} delay={i * 70}>
+              <div className="dw-card rounded-3xl p-7 h-full">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
+                  style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))" }}
+                >
+                  <s.icon size={22} color="#fff" />
+                </div>
+                <h3 className="font-extrabold text-lg mb-2">{s.title}</h3>
+                <p className="text-sm leading-7" style={{ color: "var(--mute)" }}>{s.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= STATS ============================= */
+function Counter({ target, suffix = "", duration = 1600 }) {
+  const [ref, shown] = useReveal();
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!shown) return;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      setVal(Math.floor(p * target));
+      if (p < 1) requestAnimationFrame(step);
+      else setVal(target);
+    };
+    requestAnimationFrame(step);
+  }, [shown, target, duration]);
+  return (
+    <span ref={ref} className="dw-serif-num">
+      {val}
+      {suffix}
+    </span>
+  );
+}
+
+function Stats() {
+  const items = [
+    { n: 10, s: "+", l: "پروژه انجام‌شده" },
+    { n: 10, s: "+", l: "مشتری راضی" },
+    { n: 100, s: "%", l: "رضایت مشتری" },
+    { n: 24, s: "/7", l: "پشتیبانی سریع" },
+  ];
+  return (
+    <section className="py-16 px-5 md:px-8">
+      <div className="max-w-6xl mx-auto dw-glass rounded-[2rem] py-12 px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative overflow-hidden">
+        <PixelField count={14} />
+        {items.map((it, i) => (
+          <Reveal key={it.l} delay={i * 90} className="relative">
+            <div className="text-3xl md:text-4xl font-black dw-grad-text mb-1">
+              <Counter target={it.n} suffix={it.s} />
+            </div>
+            <div className="text-xs md:text-sm" style={{ color: "var(--mute)" }}>{it.l}</div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ============================= PRICING ============================= */
+const PLANS = [
+  {
+    name: "Basic",
+    fa: "پایه",
+    tag: "برای شروع کسب‌وکار",
+    price: "۲,۹۰۰,۰۰۰",
+    features: ["طراحی سایت تک‌صفحه‌ای", "طراحی ریسپانسیو", "۱ ماه پشتیبانی", "تحویل تا ۷ روز کاری"],
+  },
+  {
+    name: "Professional",
+    fa: "حرفه‌ای",
+    tag: "برای کسب‌وکارهای حرفه‌ای",
+    price: "۶,۹۰۰,۰۰۰",
+    popular: true,
+    features: ["طراحی چندصفحه‌ای اختصاصی", "پنل مدیریت محتوا", "بهینه‌سازی سئو پایه", "۳ ماه پشتیبانی", "تحویل تا ۱۴ روز کاری"],
+  },
+  {
+    name: "Premium",
+    fa: "اختصاصی",
+    tag: "برای پروژه‌های ویژه",
+    price: "توافقی",
+    features: ["طراحی و توسعه کاملاً اختصاصی", "فروشگاه یا سامانه اختصاصی", "پشتیبانی و توسعه مستمر", "مشاوره فنی و کسب‌وکار"],
+  },
+];
+
+function Pricing({ goto }) {
+  return (
+    <section id="pricing" className="py-24 px-5 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <Reveal className="text-center mb-14">
+          <span className="text-xs font-bold tracking-widest" style={{ color: "var(--blue-2)" }}>تعرفه‌ها</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-3">پلنی متناسب با پروژه‌ات انتخاب کن</h2>
+          <p className="text-sm mt-3" style={{ color: "var(--mute-2)" }}>قیمت‌ها تقریبی است و بر اساس نیاز پروژه قابل تنظیم می‌باشد.</p>
+        </Reveal>
+        <div className="grid md:grid-cols-3 gap-6 items-stretch">
+          {PLANS.map((p, i) => (
+            <Reveal key={p.name} delay={i * 90}>
+              <div
+                className="dw-card rounded-3xl p-8 h-full flex flex-col relative"
+                style={p.popular ? { borderColor: "var(--blue-2)", boxShadow: "0 30px 70px -35px rgba(47,82,255,0.55)" } : undefined}
+              >
+                {p.popular && (
+                  <span
+                    className="absolute -top-3.5 right-8 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1"
+                    style={{ background: "linear-gradient(95deg,var(--blue-1),var(--blue-2))", color: "#fff" }}
+                  >
+                    <Star size={11} fill="#fff" /> محبوب‌ترین انتخاب
+                  </span>
+                )}
+                <h3 className="font-black text-xl mb-1">{p.fa}</h3>
+                <p className="text-xs mb-6" style={{ color: "var(--mute)" }}>{p.tag}</p>
+                <div className="mb-7">
+                  <span className="text-2xl md:text-3xl font-black">{p.price}</span>
+                  {p.price !== "توافقی" && <span className="text-xs mr-1" style={{ color: "var(--mute)" }}>تومان</span>}
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {p.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 size={16} style={{ color: "var(--blue-2)" }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => goto("order")}
+                  className={"rounded-2xl px-5 py-3 font-bold text-sm " + (p.popular ? "dw-btn-primary" : "dw-btn-ghost")}
+                >
+                  انتخاب این پلن
+                </button>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= PORTFOLIO ============================= */
+const PROJECTS = [
+  {
+    name: "Axis Shop",
+    type: "فروشگاه اینترنتی",
+    desc: "فروشگاه آنلاین با سبد خرید فعال، دسته‌بندی محصولات و طراحی مدرن ریسپانسیو.",
+    url: "https://kashancity.github.io/Axis-Shop/",
+    tone: "linear-gradient(135deg,#2F52FF,#7C93FF)",
+  },
+  {
+    name: "Nova Corporate",
+    type: "سایت شرکتی",
+    desc: "وب‌سایت معرفی شرکت با صفحات خدمات، درباره ما و فرم تماس اختصاصی.",
+    url: "#",
+    tone: "linear-gradient(135deg,#1B2B99,#2F52FF)",
+  },
+  {
+    name: "Arya Portfolio",
+    type: "سایت شخصی",
+    desc: "نمونه‌کار آنلاین برای معرفی مهارت‌ها و پروژه‌های فردی.",
+    url: "#",
+    tone: "linear-gradient(135deg,#7C93FF,#2F52FF)",
+  },
+];
+
+function Portfolio() {
+  const toast = useToast();
+  return (
+    <section id="portfolio" className="py-24 px-5 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <Reveal className="text-center mb-14">
+          <span className="text-xs font-bold tracking-widest" style={{ color: "var(--blue-2)" }}>نمونه‌کارها</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-3">پروژه‌هایی که ساخته‌ایم</h2>
+        </Reveal>
+        <div className="grid md:grid-cols-3 gap-6">
+          {PROJECTS.map((p, i) => (
+            <Reveal key={p.name} delay={i * 90}>
+              <div className="dw-card rounded-3xl overflow-hidden h-full flex flex-col">
+                <div className="h-40 relative flex items-center justify-center" style={{ background: p.tone }}>
+                  <span className="text-white font-black text-2xl tracking-wide opacity-90">{p.name}</span>
+                  <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%)" }} />
+                </div>
+                <div className="p-6 flex flex-col flex-1">
+                  <span className="text-[11px] font-bold w-fit px-2.5 py-1 rounded-full mb-3" style={{ background: "var(--glass-strong)", color: "var(--blue-2)" }}>
+                    {p.type}
+                  </span>
+                  <p className="text-sm leading-7 mb-5 flex-1" style={{ color: "var(--mute)" }}>{p.desc}</p>
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => { if (p.url === "#") { e.preventDefault(); toast("این نمونه‌کار به‌زودی منتشر می‌شود.", "error"); } }}
+                    className="dw-btn-ghost rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-center gap-2"
+                  >
+                    مشاهده سایت <ExternalLink size={14} />
+                  </a>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= TESTIMONIALS ============================= */
+const TESTIMONIALS = [
+  { name: "@Prhamparham", text: "سفارش اضافه کردن قابلیت سبد خرید و لوگو با موفقیت انجام و تحویل داده شد.", price: "۲۰۰,۰۰۰ تومان" },
+  { name: "سارا احمدی", text: "طراحی سایت فروشگاهی من خیلی حرفه‌ای و سریع انجام شد، از پشتیبانیشون هم راضی‌ام.", price: "۴,۵۰۰,۰۰۰ تومان" },
+  { name: "امیر رضایی", text: "سایت شرکتی با کیفیت عالی و طبق زمان‌بندی تحویل گرفتم، پیشنهاد می‌کنم.", price: "۶,۹۰۰,۰۰۰ تومان" },
+];
+
+function Testimonials() {
+  return (
+    <section id="testimonials" className="py-24 px-5 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <Reveal className="text-center mb-14">
+          <span className="text-xs font-bold tracking-widest" style={{ color: "var(--blue-2)" }}>رضایت مشتریان</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-3">حرف مشتری‌های دیجی وب</h2>
+        </Reveal>
+        <div className="grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t, i) => (
+            <Reveal key={t.name} delay={i * 90}>
+              <div className="dw-card rounded-3xl p-7 h-full flex flex-col">
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: 5 }).map((_, k) => (
+                    <Star key={k} size={15} fill="var(--amber)" style={{ color: "var(--amber)" }} />
+                  ))}
+                </div>
+                <p className="text-sm leading-8 flex-1 mb-6" style={{ color: "var(--mute)" }}>«{t.text}»</p>
+                <div className="flex items-center justify-between pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))", color: "#fff" }}>
+                      {t.name[1]?.toUpperCase() || "?"}
+                    </div>
+                    <span className="text-sm font-bold">{t.name}</span>
+                  </div>
+                  <span className="text-xs font-bold" style={{ color: "var(--blue-2)" }}>{t.price}</span>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= CONTACT ============================= */
+function Contact() {
+  const toast = useToast();
+  const [form, setForm] = useState({ name: "", phone: "", msg: "" });
+  const [errs, setErrs] = useState({});
+  const submit = (e) => {
+    e.preventDefault();
+    const er = {};
+    if (form.name.trim().length < 2) er.name = true;
+    if (!/^0?9\d{9}$/.test(form.phone.replace(/\s/g, ""))) er.phone = true;
+    if (form.msg.trim().length < 5) er.msg = true;
+    setErrs(er);
+    if (Object.keys(er).length) return toast("لطفاً فیلدها را درست تکمیل کنید.", "error");
+    toast("پیام شما با موفقیت ارسال شد.");
+    setForm({ name: "", phone: "", msg: "" });
+  };
+  return (
+    <section id="contact" className="py-24 px-5 md:px-8">
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10">
+        <Reveal>
+          <span className="text-xs font-bold tracking-widest" style={{ color: "var(--blue-2)" }}>تماس با ما</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-3 mb-6">آماده‌ی شروع پروژه‌ات هستیم</h2>
+          <p className="text-sm leading-8 mb-8" style={{ color: "var(--mute)" }}>
+            هر سوالی درباره خدمات یا قیمت‌گذاری داری، برامون بفرست تا در سریع‌ترین زمان پاسخ بدیم.
+          </p>
+          <div className="space-y-4">
+            {[
+              { icon: Phone, label: "شماره تماس", val: "۰۹۱۲ ۰۰۰ ۰۰۰۰" },
+              { icon: Mail, label: "ایمیل", val: "info@digiweb.studio" },
+              { icon: MapPin, label: "آدرس", val: "ایران، فعالیت به‌صورت کاملاً آنلاین" },
+            ].map((c) => (
+              <div key={c.label} className="dw-glass rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))" }}>
+                  <c.icon size={17} color="#fff" />
+                </div>
+                <div>
+                  <div className="text-[11px]" style={{ color: "var(--mute-2)" }}>{c.label}</div>
+                  <div className="text-sm font-bold dw-serif-num">{c.val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+        <Reveal delay={100}>
+          <form onSubmit={submit} className="dw-card rounded-3xl p-7 space-y-4">
+            <div>
+              <label className="text-xs font-bold mb-1.5 block">نام و نام خانوادگی</label>
+              <input
+                className={"dw-input w-full rounded-xl px-4 py-3 text-sm " + (errs.name ? "err" : "")}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="مثلاً علی محمدی"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold mb-1.5 block">شماره موبایل</label>
+              <input
+                className={"dw-input w-full rounded-xl px-4 py-3 text-sm dw-serif-num " + (errs.phone ? "err" : "")}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="09123456789"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold mb-1.5 block">پیام شما</label>
+              <textarea
+                rows={4}
+                className={"dw-input w-full rounded-xl px-4 py-3 text-sm resize-none " + (errs.msg ? "err" : "")}
+                value={form.msg}
+                onChange={(e) => setForm({ ...form, msg: e.target.value })}
+                placeholder="توضیح مختصری از درخواستت بنویس..."
+              />
+            </div>
+            <button type="submit" className="dw-btn-primary w-full rounded-xl py-3.5 font-bold flex items-center justify-center gap-2">
+              ارسال پیام <Send size={15} />
+            </button>
+          </form>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ============================= FOOTER ============================= */
+function Footer({ scrollTo, goto }) {
+  return (
+    <footer className="pt-16 pb-8 px-5 md:px-8 relative" style={{ borderTop: "1px solid var(--border)" }}>
+      <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <LogoMark size={30} />
+            <span className="font-black dw-grad-text">دیجی وب</span>
+          </div>
+          <p className="text-sm leading-7" style={{ color: "var(--mute)" }}>ساخت سایت حرفه‌ای برای کسب‌وکارهای مدرن.</p>
+        </div>
+        <div>
+          <h4 className="font-bold mb-4 text-sm">لینک‌ها</h4>
+          <div className="flex flex-col gap-2.5 text-sm" style={{ color: "var(--mute)" }}>
+            {NAV_LINKS.map((l) => (
+              <button key={l.id} onClick={() => scrollTo(l.id)} className="text-right w-fit hover:text-white transition-colors">{l.label}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h4 className="font-bold mb-4 text-sm">حساب کاربری</h4>
+          <div className="flex flex-col gap-2.5 text-sm" style={{ color: "var(--mute)" }}>
+            <button onClick={() => goto("login")} className="text-right w-fit hover:text-white transition-colors">ورود</button>
+            <button onClick={() => goto("signup")} className="text-right w-fit hover:text-white transition-colors">ثبت‌نام</button>
+            <button onClick={() => goto("order")} className="text-right w-fit hover:text-white transition-colors">ثبت سفارش</button>
+          </div>
+        </div>
+        <div>
+          <h4 className="font-bold mb-4 text-sm">شبکه‌های اجتماعی</h4>
+          <div className="flex gap-2.5">
+            {[Instagram, Telegram, Mail].map((Ic, i) => (
+              <a key={i} href="#" onClick={(e) => e.preventDefault()} className="dw-btn-ghost w-10 h-10 rounded-xl flex items-center justify-center">
+                <Ic size={16} />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ borderTop: "1px solid var(--border)", color: "var(--mute-2)" }}>
+        <span>© {new Date().getFullYear()} DigiWeb Studio — تمام حقوق محفوظ است.</span>
+        <span>ایده‌ات رو به وب تبدیل کن 🚀</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ============================= AUTH PAGES ============================= */
+function AuthShell({ children, title, sub }) {
+  return (
+    <div className="min-h-screen pt-28 pb-16 px-5 flex items-center justify-center relative overflow-hidden">
+      <PixelField count={22} />
+      <div className="w-full max-w-md relative dw-reveal">
+        <div className="text-center mb-8">
+          <div className="inline-block mb-4"><LogoMark size={48} /></div>
+          <h1 className="text-2xl font-black mb-1">{title}</h1>
+          <p className="text-sm" style={{ color: "var(--mute)" }}>{sub}</p>
+        </div>
+        <div className="dw-card rounded-3xl p-7">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function LoginPage({ goto, onLogin }) {
+  const toast = useToast();
+  const [show, setShow] = useState(false);
+  const [f, setF] = useState({ id: "", pass: "", remember: false });
+  const [errs, setErrs] = useState({});
+  const submit = (e) => {
+    e.preventDefault();
+    const er = {};
+    if (f.id.trim().length < 3) er.id = true;
+    if (f.pass.length < 4) er.pass = true;
+    setErrs(er);
+    if (Object.keys(er).length) return toast("اطلاعات وارد شده صحیح نیست.", "error");
+    onLogin({ name: f.id.includes("@") ? f.id.split("@")[0] : f.id, id: f.id });
+    toast("خوش آمدید 👋");
+    goto("dashboard");
+  };
+  return (
+    <AuthShell title="ورود به حساب کاربری" sub="برای مدیریت سفارش‌هایت وارد شو">
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="text-xs font-bold mb-1.5 block">ایمیل یا شماره موبایل</label>
+          <input className={"dw-input w-full rounded-xl px-4 py-3 text-sm " + (errs.id ? "err" : "")} value={f.id} onChange={(e) => setF({ ...f, id: e.target.value })} placeholder="example@mail.com" />
+        </div>
+        <div>
+          <label className="text-xs font-bold mb-1.5 block">رمز عبور</label>
+          <div className="relative">
+            <input type={show ? "text" : "password"} className={"dw-input w-full rounded-xl px-4 py-3 text-sm pl-11 " + (errs.pass ? "err" : "")} value={f.pass} onChange={(e) => setF({ ...f, pass: e.target.value })} placeholder="••••••••" />
+            <button type="button" onClick={() => setShow((s) => !s)} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--mute)" }}>
+              {show ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <label className="flex items-center gap-1.5 cursor-pointer" style={{ color: "var(--mute)" }}>
+            <input type="checkbox" checked={f.remember} onChange={(e) => setF({ ...f, remember: e.target.checked })} />
+            مرا به خاطر بسپار
+          </label>
+          <button type="button" onClick={() => toast("لینک بازیابی رمز ارسال شد.")} className="font-semibold" style={{ color: "var(--blue-2)" }}>
+            رمز عبور را فراموش کرده‌اید؟
+          </button>
+        </div>
+        <button type="submit" className="dw-btn-primary w-full rounded-xl py-3.5 font-bold flex items-center justify-center gap-2">
+          <LogIn size={16} /> ورود
+        </button>
+      </form>
+      <p className="text-center text-xs mt-6" style={{ color: "var(--mute)" }}>
+        حساب کاربری نداری؟{" "}
+        <button onClick={() => goto("signup")} className="font-bold" style={{ color: "var(--blue-2)" }}>ثبت‌نام کن</button>
+      </p>
+    </AuthShell>
+  );
+}
+
+function SignupPage({ goto, onLogin }) {
+  const toast = useToast();
+  const [f, setF] = useState({ name: "", email: "", phone: "", pass: "", pass2: "" });
+  const [errs, setErrs] = useState({});
+  const submit = (e) => {
+    e.preventDefault();
+    const er = {};
+    if (f.name.trim().length < 3) er.name = true;
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(f.email)) er.email = true;
+    if (!/^0?9\d{9}$/.test(f.phone.replace(/\s/g, ""))) er.phone = true;
+    if (f.pass.length < 6) er.pass = true;
+    if (f.pass2 !== f.pass) er.pass2 = true;
+    setErrs(er);
+    if (Object.keys(er).length) return toast("لطفاً اطلاعات فرم را بررسی کن.", "error");
+    onLogin({ name: f.name, id: f.email });
+    toast("ثبت‌نام با موفقیت انجام شد 🎉");
+    goto("dashboard");
+  };
+  const field = (key, label, type = "text", ph = "", dir) => (
+    <div>
+      <label className="text-xs font-bold mb-1.5 block">{label}</label>
+      <input
+        type={type}
+        dir={dir}
+        className={"dw-input w-full rounded-xl px-4 py-3 text-sm " + (errs[key] ? "err" : "")}
+        value={f[key]}
+        onChange={(e) => setF({ ...f, [key]: e.target.value })}
+        placeholder={ph}
+      />
+    </div>
+  );
+  return (
+    <AuthShell title="ساخت حساب کاربری" sub="در چند ثانیه به دیجی وب بپیوند">
+      <form onSubmit={submit} className="space-y-4">
+        {field("name", "نام و نام خانوادگی", "text", "مثلاً سارا احمدی")}
+        {field("email", "ایمیل", "email", "example@mail.com", "ltr")}
+        {field("phone", "شماره موبایل", "tel", "09123456789", "ltr")}
+        {field("pass", "رمز عبور", "password", "حداقل ۶ کاراکتر")}
+        {field("pass2", "تکرار رمز عبور", "password", "رمز را دوباره وارد کن")}
+        <button type="submit" className="dw-btn-primary w-full rounded-xl py-3.5 font-bold flex items-center justify-center gap-2">
+          <UserPlus size={16} /> ثبت‌نام
+        </button>
+      </form>
+      <p className="text-center text-xs mt-6" style={{ color: "var(--mute)" }}>
+        قبلاً ثبت‌نام کرده‌ای؟{" "}
+        <button onClick={() => goto("login")} className="font-bold" style={{ color: "var(--blue-2)" }}>وارد شو</button>
+      </p>
+    </AuthShell>
+  );
+}
+
+/* ============================= DASHBOARD ============================= */
+const MOCK_ORDERS = [
+  { id: "DW-1042", type: "سایت فروشگاهی", status: "در حال انجام", date: "۱۴۰۴/۰۵/۱۲" },
+  { id: "DW-1031", type: "افزودن سبد خرید و لوگو", status: "تحویل شده", date: "۱۴۰۴/۰۴/۲۰" },
+];
+const MOCK_PROJECTS = [
+  { name: "Axis Shop", progress: 100, status: "تحویل شده" },
+  { name: "پنل مدیریت محتوا", progress: 60, status: "در حال توسعه" },
+];
+
+function Sidebar({ tab, setTab, onLogout, mobileOpen, setMobileOpen }) {
+  const items = [
+    { id: "account", label: "اطلاعات حساب", icon: User },
+    { id: "orders", label: "سفارش‌های من", icon: Package },
+    { id: "payments", label: "وضعیت پرداخت", icon: CreditCard },
+    { id: "projects", label: "پروژه‌های من", icon: FolderKanban },
+    { id: "support", label: "پشتیبانی", icon: MessageCircle },
+    { id: "settings", label: "تنظیمات حساب", icon: Settings },
+  ];
+  return (
+    <>
+      {mobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />}
+      <aside
+        className={
+          "dw-glass rounded-3xl p-4 flex flex-col gap-1 w-64 shrink-0 fixed lg:static top-24 bottom-6 z-50 transition-transform duration-300 " +
+          (mobileOpen ? "translate-x-0 right-4" : "translate-x-full lg:translate-x-0 right-4")
+        }
+      >
+        {items.map((it) => (
+          <button
+            key={it.id}
+            onClick={() => { setTab(it.id); setMobileOpen(false); }}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors"
+            style={tab === it.id ? { background: "linear-gradient(95deg,var(--blue-1),var(--blue-2))", color: "#fff" } : { color: "var(--mute)" }}
+          >
+            <it.icon size={17} /> {it.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button onClick={onLogout} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold" style={{ color: "#FF7A90" }}>
+          <LogOut size={17} /> خروج
+        </button>
+      </aside>
+    </>
+  );
+}
+
+function DashboardPage({ user, goto, onLogout }) {
+  const [tab, setTab] = useState("account");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const toast = useToast();
+
+  return (
+    <div className="min-h-screen pt-24 pb-16 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-black">سلام، {user?.name || "کاربر"} 👋</h1>
+          <p className="text-sm" style={{ color: "var(--mute)" }}>به داشبورد دیجی وب خوش آمدی.</p>
+        </div>
+        <button className="dw-btn-ghost lg:hidden w-10 h-10 rounded-xl flex items-center justify-center" onClick={() => setMobileOpen(true)}>
+          <Menu size={17} />
+        </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto flex gap-6 relative">
+        <Sidebar tab={tab} setTab={setTab} onLogout={onLogout} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+        <main className="flex-1 dw-card rounded-3xl p-6 md:p-8 min-h-[420px]">
+          {tab === "account" && (
+            <div className="dw-reveal space-y-5">
+              <h2 className="font-extrabold text-lg mb-2">اطلاعات حساب</h2>
+              {[
+                { l: "نام و نام خانوادگی", v: user?.name || "—" },
+                { l: "ایمیل / شناسه", v: user?.id || "—" },
+                { l: "تاریخ عضویت", v: "۱۴۰۴/۰۳/۰۱" },
+              ].map((r) => (
+                <div key={r.l} className="flex items-center justify-between py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <span className="text-sm" style={{ color: "var(--mute)" }}>{r.l}</span>
+                  <span className="text-sm font-bold">{r.v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "orders" && (
+            <div className="dw-reveal">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-extrabold text-lg">سفارش‌های من</h2>
+                <button onClick={() => goto("order")} className="dw-btn-primary rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5">
+                  <PlusCircle size={14} /> سفارش جدید
+                </button>
+              </div>
+              <div className="space-y-3">
+                {MOCK_ORDERS.map((o) => (
+                  <div key={o.id} className="dw-glass rounded-2xl p-4 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-sm dw-serif-num">{o.id}</div>
+                      <div className="text-xs" style={{ color: "var(--mute)" }}>{o.type} · {o.date}</div>
+                    </div>
+                    <span
+                      className="text-[11px] font-bold px-3 py-1.5 rounded-full"
+                      style={{ background: o.status === "تحویل شده" ? "rgba(52,211,153,0.15)" : "rgba(255,176,32,0.15)", color: o.status === "تحویل شده" ? "#34D399" : "var(--amber)" }}
+                    >
+                      {o.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "payments" && (
+            <div className="dw-reveal space-y-4">
+              <h2 className="font-extrabold text-lg mb-2">وضعیت پرداخت</h2>
+              <div className="dw-glass rounded-2xl p-5 flex items-center justify-between">
+                <span className="text-sm">آخرین پرداخت — DW-1031</span>
+                <span className="font-bold dw-serif-num" style={{ color: "var(--blue-2)" }}>۲۰۰,۰۰۰ تومان</span>
+              </div>
+              <div className="dw-glass rounded-2xl p-5 flex items-center justify-between">
+                <span className="text-sm">مانده حساب پروژه DW-1042</span>
+                <span className="font-bold dw-serif-num" style={{ color: "var(--amber)" }}>۳,۵۰۰,۰۰۰ تومان</span>
+              </div>
+            </div>
+          )}
+
+          {tab === "projects" && (
+            <div className="dw-reveal space-y-4">
+              <h2 className="font-extrabold text-lg mb-2">پروژه‌های من</h2>
+              {MOCK_PROJECTS.map((p) => (
+                <div key={p.name} className="dw-glass rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-3 text-sm">
+                    <span className="font-bold">{p.name}</span>
+                    <span style={{ color: "var(--mute)" }}>{p.status}</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${p.progress}%`, background: "linear-gradient(95deg,var(--blue-1),var(--blue-2))", animation: "dwCountBar 1.2s ease both" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "support" && <SupportPanel embedded />}
+
+          {tab === "settings" && (
+            <div className="dw-reveal space-y-4 max-w-md">
+              <h2 className="font-extrabold text-lg mb-2">تنظیمات حساب</h2>
+              <div>
+                <label className="text-xs font-bold mb-1.5 block">نام نمایشی</label>
+                <input className="dw-input w-full rounded-xl px-4 py-3 text-sm" defaultValue={user?.name} />
+              </div>
+              <div>
+                <label className="text-xs font-bold mb-1.5 block">اعلان‌ها</label>
+                <label className="flex items-center gap-2 text-sm" style={{ color: "var(--mute)" }}>
+                  <input type="checkbox" defaultChecked /> دریافت پیامک برای بروزرسانی سفارش
+                </label>
+              </div>
+              <button onClick={() => toast("تغییرات ذخیره شد.")} className="dw-btn-primary rounded-xl px-6 py-3 text-sm font-bold">ذخیره تغییرات</button>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= ORDER FORM ============================= */
+const SITE_TYPES = ["سایت شرکتی", "سایت فروشگاهی", "سایت شخصی", "سایت اختصاصی"];
+
+function OrderPage({ goto, user }) {
+  const toast = useToast();
+  const [f, setF] = useState({ name: "", phone: "", type: "", budget: "", desc: "", features: "", file: null });
+  const [errs, setErrs] = useState({});
+  const [sent, setSent] = useState(false);
+
+  const submit = (e) => {
+    e.preventDefault();
+    const er = {};
+    if (f.name.trim().length < 3) er.name = true;
+    if (!/^0?9\d{9}$/.test(f.phone.replace(/\s/g, ""))) er.phone = true;
+    if (!f.type) er.type = true;
+    if (f.desc.trim().length < 8) er.desc = true;
+    setErrs(er);
+    if (Object.keys(er).length) return toast("لطفاً فیلدهای الزامی را کامل کن.", "error");
+    setSent(true);
+    toast("سفارش شما با موفقیت ثبت شد ✅");
+  };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen pt-28 pb-16 px-5 flex items-center justify-center">
+        <div className="dw-card rounded-3xl p-10 text-center max-w-md dw-reveal">
+          <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))" }}>
+            <CheckCircle2 size={28} color="#fff" />
+          </div>
+          <h2 className="text-xl font-black mb-2">سفارش ثبت شد!</h2>
+          <p className="text-sm mb-7" style={{ color: "var(--mute)" }}>تیم دیجی وب به‌زودی از طریق شماره تماست با شما در ارتباط خواهد بود.</p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => goto(user ? "dashboard" : "home")} className="dw-btn-primary rounded-xl px-5 py-3 text-sm font-bold">
+              {user ? "مشاهده داشبورد" : "بازگشت به خانه"}
+            </button>
+            <button onClick={() => { setSent(false); setF({ name: "", phone: "", type: "", budget: "", desc: "", features: "", file: null }); }} className="dw-btn-ghost rounded-xl px-5 py-3 text-sm font-bold">
+              سفارش جدید
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-28 pb-20 px-5 relative overflow-hidden">
+      <PixelField count={16} />
+      <div className="max-w-2xl mx-auto relative">
+        <Reveal className="text-center mb-8">
+          <h1 className="text-3xl font-black mb-2">ثبت سفارش جدید</h1>
+          <p className="text-sm" style={{ color: "var(--mute)" }}>اطلاعات پروژه‌ات رو برامون بفرست تا سریع بررسیش کنیم.</p>
+        </Reveal>
+        <form onSubmit={submit} className="dw-card rounded-3xl p-7 space-y-5 dw-reveal">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold mb-1.5 block">نام و نام خانوادگی *</label>
+              <input className={"dw-input w-full rounded-xl px-4 py-3 text-sm " + (errs.name ? "err" : "")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="نام کامل" />
+            </div>
+            <div>
+              <label className="text-xs font-bold mb-1.5 block">شماره تماس *</label>
+              <input dir="ltr" className={"dw-input w-full rounded-xl px-4 py-3 text-sm dw-serif-num " + (errs.phone ? "err" : "")} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="09123456789" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold mb-1.5 block">نوع سایت *</label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {SITE_TYPES.map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => setF({ ...f, type: t })}
+                  className="rounded-xl px-3 py-2.5 text-xs font-bold transition-all"
+                  style={f.type === t ? { background: "linear-gradient(95deg,var(--blue-1),var(--blue-2))", color: "#fff" } : { background: "var(--glass)", border: "1px solid var(--border)", color: "var(--mute)" }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {errs.type && <p className="text-[11px] mt-1.5" style={{ color: "#FF5C7A" }}>لطفاً یک نوع سایت انتخاب کن.</p>}
+          </div>
+
+          <div>
+            <label className="text-xs font-bold mb-1.5 block">بودجه تقریبی (تومان)</label>
+            <input className="dw-input w-full rounded-xl px-4 py-3 text-sm dw-serif-num" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value })} placeholder="مثلاً ۵,۰۰۰,۰۰۰" />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold mb-1.5 block">توضیحات پروژه *</label>
+            <textarea rows={4} className={"dw-input w-full rounded-xl px-4 py-3 text-sm resize-none " + (errs.desc ? "err" : "")} value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} placeholder="درباره کسب‌وکار و هدف سایتت بگو..." />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold mb-1.5 block">امکانات موردنیاز</label>
+            <input className="dw-input w-full rounded-xl px-4 py-3 text-sm" value={f.features} onChange={(e) => setF({ ...f, features: e.target.value })} placeholder="مثلاً درگاه پرداخت، پنل مدیریت، چت آنلاین..." />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold mb-1.5 block">آپلود فایل (لوگو، برندبوک و ...)</label>
+            <label className="dw-input w-full rounded-xl px-4 py-6 text-sm flex flex-col items-center gap-2 cursor-pointer" style={{ borderStyle: "dashed" }}>
+              <Upload size={20} style={{ color: "var(--blue-2)" }} />
+              <span style={{ color: "var(--mute)" }}>{f.file ? f.file : "برای انتخاب فایل کلیک کن"}</span>
+              <input type="file" className="hidden" onChange={(e) => setF({ ...f, file: e.target.files?.[0]?.name || null })} />
+            </label>
+          </div>
+
+          <button type="submit" className="dw-btn-primary w-full rounded-xl py-3.5 font-bold flex items-center justify-center gap-2">
+            ثبت سفارش <Rocket size={16} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= SUPPORT ============================= */
+const TICKET_TOPICS = ["مشکل فنی", "سوال درباره سفارش", "درخواست تغییر پروژه", "مالی و پرداخت", "سایر"];
+
+function SupportPanel({ embedded }) {
+  const toast = useToast();
+  const [tickets, setTickets] = useState([
+    { id: "T-201", topic: "سوال درباره سفارش", msg: "زمان تحویل پروژه DW-1042 چقدره؟", reply: "طبق برنامه، تحویل تا پایان هفته آینده انجام می‌شود.", status: "پاسخ داده شده" },
+  ]);
+  const [f, setF] = useState({ topic: "", msg: "" });
+
+  const create = (e) => {
+    e.preventDefault();
+    if (!f.topic || f.msg.trim().length < 4) return toast("موضوع و پیام تیکت را کامل کن.", "error");
+    setTickets((t) => [{ id: `T-${200 + t.length + 1}`, topic: f.topic, msg: f.msg, reply: "", status: "در انتظار پاسخ" }, ...t]);
+    setF({ topic: "", msg: "" });
+    toast("تیکت شما ثبت شد، به‌زودی پاسخ داده می‌شود.");
+  };
+
+  return (
+    <div className={embedded ? "dw-reveal" : "max-w-3xl mx-auto"}>
+      <h2 className="font-extrabold text-lg mb-5 flex items-center gap-2"><Ticket size={18} /> پشتیبانی</h2>
+      <form onSubmit={create} className="dw-glass rounded-2xl p-5 space-y-4 mb-6">
+        <div>
+          <label className="text-xs font-bold mb-1.5 block">موضوع تیکت</label>
+          <select className="dw-input w-full rounded-xl px-4 py-3 text-sm" value={f.topic} onChange={(e) => setF({ ...f, topic: e.target.value })}>
+            <option value="">انتخاب کن...</option>
+            {TICKET_TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold mb-1.5 block">پیام</label>
+          <textarea rows={3} className="dw-input w-full rounded-xl px-4 py-3 text-sm resize-none" value={f.msg} onChange={(e) => setF({ ...f, msg: e.target.value })} placeholder="مشکل یا سوالت را بنویس..." />
+        </div>
+        <button className="dw-btn-primary rounded-xl px-5 py-3 text-sm font-bold flex items-center gap-2"><PlusCircle size={15} /> ایجاد تیکت</button>
+      </form>
+
+      <div className="space-y-3">
+        {tickets.map((t) => (
+          <div key={t.id} className="dw-glass rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold dw-serif-num" style={{ color: "var(--blue-2)" }}>{t.id} · {t.topic}</span>
+              <span
+                className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                style={{ background: t.status === "پاسخ داده شده" ? "rgba(52,211,153,0.15)" : "rgba(255,176,32,0.15)", color: t.status === "پاسخ داده شده" ? "#34D399" : "var(--amber)" }}
+              >
+                {t.status}
+              </span>
+            </div>
+            <p className="text-sm mb-2" style={{ color: "var(--mute)" }}>{t.msg}</p>
+            {t.reply && (
+              <div className="dw-glass rounded-xl p-3 text-sm mt-2 flex items-start gap-2">
+                <MessageCircle size={14} className="mt-0.5 shrink-0" style={{ color: "var(--blue-2)" }} />
+                {t.reply}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SupportPage() {
+  return (
+    <div className="min-h-screen pt-28 pb-20 px-5">
+      <SupportPanel />
+    </div>
+  );
+}
+
+/* ============================= FLOATING SUPPORT BUTTON ============================= */
+function FloatingSupport({ goto }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
+      {open && (
+        <div className="dw-card rounded-2xl p-4 w-56" style={{ animation: "dwPop .25s ease both" }}>
+          <p className="text-xs font-bold mb-3">به کمک نیاز داری؟</p>
+          <button onClick={() => { setOpen(false); goto("support"); }} className="dw-btn-primary w-full rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
+            <Ticket size={13} /> ثبت تیکت پشتیبانی
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
+        style={{ background: "linear-gradient(135deg,var(--blue-1),var(--blue-2))", boxShadow: "0 10px 30px -8px rgba(47,82,255,0.7)" }}
+        aria-label="پشتیبانی سریع"
+      >
+        {open ? <X size={20} color="#fff" /> : <MessageCircle size={20} color="#fff" />}
+      </button>
+    </div>
+  );
+}
+
+/* ============================= HOME PAGE ============================= */
+function HomePage({ goto, scrollTo }) {
+  return (
+    <>
+      <Hero goto={goto} scrollTo={scrollTo} />
+      <Services />
+      <Stats />
+      <Portfolio />
+      <Pricing goto={goto} />
+      <Testimonials />
+      <Contact />
+    </>
+  );
+}
+
+/* ============================= APP ROOT ============================= */
+export default function App() {
+  const [page, setPage] = useState("home");
+  const [loaded, setLoaded] = useState(false);
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState("dark");
+  const afterNavRef = useRef(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 900);
+    return () => clearTimeout(t);
+  }, []);
+
+  const scrollTo = useCallback((id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const goto = useCallback((p, cb) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (cb) afterNavRef.current = cb;
+  }, []);
+
+  useEffect(() => {
+    if (afterNavRef.current) {
+      const cb = afterNavRef.current;
+      afterNavRef.current = null;
+      cb();
+    }
+  }, [page]);
+
+  const handleLogout = () => {
+    setUser(null);
+    setPage("home");
+  };
+
+  return (
+    <ToastProvider>
+      <div className={"dw-root " + theme}>
+        <style>{GLOBAL_CSS}</style>
+        <LoadingScreen done={loaded} />
+        <Navbar goto={goto} page={page} user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} scrollTo={scrollTo} />
+
+        {page === "home" && <HomePage goto={goto} scrollTo={scrollTo} />}
+        {page === "login" && <LoginPage goto={goto} onLogin={setUser} />}
+        {page === "signup" && <SignupPage goto={goto} onLogin={setUser} />}
+        {page === "dashboard" && (user ? <DashboardPage user={user} goto={goto} onLogout={handleLogout} /> : <LoginPage goto={goto} onLogin={setUser} />)}
+        {page === "order" && <OrderPage goto={goto} user={user} />}
+        {page === "support" && <SupportPage />}
+
+        {page === "home" && <Footer scrollTo={scrollTo} goto={goto} />}
+        <FloatingSupport goto={goto} />
+      </div>
+    </ToastProvider>
+  );
+}
