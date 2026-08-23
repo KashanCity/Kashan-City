@@ -1,26 +1,22 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Phantom Cheat">
-  <title>Phantom Cheat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دیجی وب</title>
+
+  <!-- Required only to run the existing React project directly on GitHub Pages -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/lucide-react/dist/umd/lucide-react.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body style="margin:0">
   <div id="root"></div>
-  <script type="text/babel" data-type="module" data-presets="react">
-import ReactDOM from "https://esm.sh/react-dom@18.3.1/client";
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "https://esm.sh/react@18.3.1";
-import {
-  Rocket, ShoppingCart, User, Zap, Palette, Wrench, Globe, CheckCircle2,
-  Star, LogIn, UserPlus, LayoutDashboard, Package, CreditCard, FolderKanban,
-  MessageCircle, Settings, LogOut, Upload, Send, Menu, X, Moon, Sun,
-  ArrowLeft, Eye, EyeOff, Phone, Mail, MapPin, Instagram, Send as Telegram,
-  Sparkles, ChevronDown, ExternalLink, Clock, ShieldCheck, Ticket, PlusCircle,
-} from "https://esm.sh/lucide-react@0.468.0?deps=react@18.3.1";
 
+  <script type="text/babel">
+const { Rocket, ShoppingCart, User, Zap, Palette, Wrench, Globe, CheckCircle2, Star, LogIn, UserPlus, LayoutDashboard, Package, CreditCard, FolderKanban, MessageCircle, Settings, LogOut, Upload, Send, Menu, X, Moon, Sun, ArrowLeft, Eye, EyeOff, Phone, Mail, MapPin, Instagram, Send: Telegram, Sparkles, ChevronDown, ExternalLink, Clock, ShieldCheck, Ticket, PlusCircle } = lucideReact;
 /* ============================= DESIGN TOKENS =============================
   Color:
     --bg        #07080F  deep near-black void (matches logo backdrop)
@@ -1420,8 +1416,8 @@ function App() {
 }
 
 
-const root = ReactDOM.createRoot(document.getElementById("root")); root.render(React.createElement(App));
-
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
   </script>
 </body>
 </html>
