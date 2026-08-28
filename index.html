@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="دیجی وب - طراحی سایت، توسعه وب و سئو" />
+  <title>DigiWeb | طراحی سایت حرفه‌ای</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<header class="topbar">
+  <a class="brand" href="#home"><img src="assets/digiweb-logo.png" alt="DigiWeb"><span>دیجی وب</span></a>
+  <button class="menu-btn" id="menuBtn">☰</button>
+  <nav id="mainNav">
+    <a href="#home">خانه</a><a href="#services">خدمات</a><a href="#portfolio">نمونه‌کارها</a>
+    <a href="#plans">تعرفه‌ها</a><a href="#contact">تماس با ما</a>
+  </nav>
+  <div class="header-actions">
+    <button class="btn ghost" data-open-auth="login">ورود</button>
+    <button class="btn primary" data-open-auth="register">ثبت‌نام</button>
+  </div>
+</header>
+
+<main id="publicApp">
+<section id="home" class="hero">
+  <div class="hero-copy">
+    <div class="badge">🚀 طراحی حرفه‌ای برای کسب‌وکارهای جدی</div>
+    <h1>سایت رویایی کسب‌وکارت را با <span>دیجی وب</span> بساز</h1>
+    <p>طراحی سایت اختصاصی، مدرن و سریع برای فروشگاه‌ها، شرکت‌ها و برندهای شخصی.</p>
+    <div class="hero-actions">
+      <button class="btn primary big" id="startProjectBtn">شروع پروژه جدید</button>
+      <a class="btn ghost big" href="#portfolio">نمونه‌کارها</a>
+    </div>
+    <div class="stats">
+      <div><b id="statProjects">120+</b><span>پروژه</span></div>
+      <div><b id="statClients">95+</b><span>مشتری راضی</span></div>
+      <div><b>24/7</b><span>پشتیبانی</span></div>
+    </div>
+  </div>
+  <div class="hero-card">
+    <img src="assets/digiweb-logo.png" alt="DigiWeb logo">
+    <div class="code-card"><span>01</span> DESIGN <i>✓</i></div>
+    <div class="code-card"><span>02</span> DEVELOP <i>✓</i></div>
+    <div class="code-card"><span>03</span> LAUNCH <i>🚀</i></div>
+  </div>
+</section>
+
+<section id="services" class="section">
+  <div class="section-head"><span>خدمات ما</span><h2>هر چیزی که سایتت نیاز دارد</h2></div>
+  <div class="grid cards">
+    <article class="card"><h3>🌐 سایت شرکتی</h3><p>معرفی حرفه‌ای برند، خدمات و تیم شما.</p></article>
+    <article class="card"><h3>🛒 فروشگاه اینترنتی</h3><p>فروش آنلاین با تجربه کاربری مدرن.</p></article>
+    <article class="card"><h3>✨ طراحی اختصاصی</h3><p>طراحی مطابق هویت و نیاز دقیق کسب‌وکار.</p></article>
+    <article class="card"><h3>🚀 لندینگ پیج</h3><p>صفحه فرود سریع و جذاب برای کمپین‌ها.</p></article>
+    <article class="card"><h3>⚙️ توسعه وب</h3><p>امکانات سفارشی و پنل‌های اختصاصی.</p></article>
+    <article class="card"><h3>📈 سئو</h3><p>بهینه‌سازی پایه برای دیده‌شدن بهتر.</p></article>
+  </div>
+</section>
+
+<section id="portfolio" class="section">
+  <div class="section-head"><span>نمونه‌کارها</span><h2>پروژه‌هایی که با افتخار ساخته‌ایم</h2></div>
+  <div class="grid portfolio-grid" id="portfolioList"><div class="loading">در حال بارگذاری...</div></div>
+</section>
+
+<section id="plans" class="section">
+  <div class="section-head"><span>تعرفه‌ها</span><h2>پلن مناسب پروژه‌ات را انتخاب کن</h2></div>
+  <div class="grid plans-grid" id="plansList"><div class="loading">در حال بارگذاری...</div></div>
+</section>
+
+<section class="cta">
+  <h2>ایده‌ات را به یک سایت حرفه‌ای تبدیل کن 🚀</h2>
+  <p>همین حالا پروژه‌ات را ثبت کن تا بررسی کنیم.</p>
+  <button class="btn primary big" id="ctaProjectBtn">ثبت پروژه جدید</button>
+</section>
+
+<section id="contact" class="section contact">
+  <div class="section-head"><span>ارتباط با ما</span><h2>برای شروع همکاری پیام بده</h2></div>
+  <form id="contactForm" class="form card">
+    <div class="two"><input name="name" placeholder="نام شما" required><input name="email" type="email" placeholder="ایمیل" required></div>
+    <input name="subject" placeholder="موضوع">
+    <textarea name="message" placeholder="پیام شما" required></textarea>
+    <button class="btn primary">ارسال پیام</button>
+  </form>
+</section>
+</main>
+
+<section id="dashboardApp" class="dashboard hidden">
+  <aside class="sidebar">
+    <div class="brand mini"><img src="assets/digiweb-logo.png"><span>دیجی وب</span></div>
+    <button data-page="overview">📊 داشبورد</button>
+    <button data-page="projects">📁 پروژه‌های من</button>
+    <button data-page="new-project">➕ ثبت پروژه جدید</button>
+    <button data-page="receipts">📸 رسیدهای پرداخت</button>
+    <button data-page="tickets">💬 پشتیبانی</button>
+    <button data-page="profile">👤 حساب کاربری</button>
+    <button class="admin-only hidden" data-page="admin">🛠 مدیریت</button>
+    <button id="logoutBtn" class="danger">خروج از حساب</button>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-top"><div><small>پنل کاربری DigiWeb</small><h2 id="dashTitle">داشبورد</h2></div><div class="user-chip" id="userChip">...</div></div>
+    <div id="pageContent"></div>
+  </div>
+</section>
+
+<div id="authModal" class="modal hidden"><div class="modal-box">
+  <button class="close" data-close>×</button>
+  <div id="authContent"></div>
+</div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>
